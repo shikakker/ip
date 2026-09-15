@@ -12,7 +12,7 @@ const safeSegment = (value: string | undefined | null, fallback: string) => {
 }
 
 export default function middleware(req: NextRequest) {
-  const country = safeSegment(req.geo?.country, 'unknown')
+  const country = safeSegment(req.headers.get('x-vercel-ip-country'), 'unknown')
   const preferredLocale = req.headers.get('accept-language')?.split(',')?.[0]
   const locale = safeSegment(preferredLocale, 'en-us')
 
