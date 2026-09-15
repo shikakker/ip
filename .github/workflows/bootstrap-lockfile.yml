@@ -1,4 +1,4 @@
-name: Bootstrap npm lockfile
+name: Stabilize dependency lock
 
 on:
   push:
@@ -8,7 +8,7 @@ permissions:
   contents: write
 
 jobs:
-  bootstrap:
+  verify-and-lock:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -18,16 +18,18 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Regression contracts
-        run: node --test tests/*.test.mjs
       - name: Resolve lockfile
         run: npm install --package-lock-only --ignore-scripts
       - name: Clean install
         run: npm ci --ignore-scripts
+      - name: Regression tests
+        run: npm run test
       - name: Production dependency audit
         run: npm audit --omit=dev --audit-level=high
       - name: TypeScript
-        run: npx tsc --noEmit
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
       - name: Production build
         run: npm run build
       - name: Commit verified dependency state
@@ -39,5 +41,5 @@ jobs:
             echo 'package-lock.json already synchronized'
             exit 0
           fi
-          git commit -m 'build: add verified npm lockfile'
+          git commit -m 'build: lock verified stable ip runtime'
           git push origin HEAD:portfolio-improvements-2026-08
