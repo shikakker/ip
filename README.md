@@ -1,125 +1,89 @@
 # Geo IP Localization — Vercel / Next.js Example
 
-Historical Next.js Edge Middleware experiment based on the Vercel examples repository.
+A maintained adaptation of the Vercel examples Geo/IP localization demo.
 
-The project detects request geolocation / language context at the edge, rewrites the home route to a localized country page, loads a small translation dictionary, and displays a country flag / localized greeting.
+The project reads Vercel's coarse country request header plus `Accept-Language`, rewrites `/` to a localized route, loads a small translation dictionary, and renders the resolved locale/country with a country flag when location metadata is available.
 
-This is an **adapted Vercel example**, not a standalone geolocation product.
+This is an **adapted Vercel example**, not a standalone IP intelligence product and not a source of precise user location.
 
-## Architecture
+## Request flow
 
 ```text
 GET /
   |
   v
-Next.js Middleware
-  |
-  +-- req.geo.country
-  +-- Accept-Language header
-  |
+Next.js Proxy (`proxy.ts`)
+  |-- x-vercel-ip-country -> normalized country or `unknown`
+  |-- Accept-Language     -> normalized locale or `en-us`
   v
 rewrite -> /<locale>/<country>
   |
   v
-localized page + flag + dictionary
+pages/[locale]/[country].tsx
+  |-- dictionary
+  |-- coarse country state
+  |-- flag when country metadata exists
 ```
 
-## Middleware behavior
+Missing country metadata fails closed to `unknown`; the UI reports that location is unavailable instead of fabricating a default country.
 
-`middleware.ts` runs only for `/` and derives:
+## Stack
 
-```text
-country = req.geo?.country || "us"
-locale  = first Accept-Language value || "en-US"
-```
-
-It then rewrites the request to:
-
-```text
-/<locale>/<country>
-```
-
-without changing the URL shown to the visitor.
-
-## Localized page
-
-`pages/[locale]/[country].tsx` uses blocking fallback generation and loads a dictionary through the local `lib/api` abstraction.
-
-The page presents:
-
-- localized title / subtitle / greeting;
-- the resolved locale;
-- a country flag;
-- a world-map background;
-- a link to Vercel edge-header documentation.
-
-## Important historical Vercel API caveat
-
-The code comments state that `req.geo` availability depended on Vercel plan / runtime behavior at the time this example was created.
-
-Next.js and Vercel geolocation APIs have changed across versions. If reviving this example, verify the current request / geolocation API rather than assuming historical `NextRequest.geo` behavior is still supported unchanged.
-
-The package also uses:
-
-```text
-next: canary
-react: latest
-@vercel/examples-ui: latest
-```
-
-so dependency resolution today may produce a stack very different from the original working version.
-
-For reproducibility, pin compatible historical versions or migrate the code to current Next.js / Vercel conventions.
-
-## Privacy boundary
-
-Country / locale detection can be useful for localization, but location-derived personalization should remain proportional to the product need.
-
-A production application should avoid claiming exact user location when only coarse IP geolocation is available and should document any analytics / storage of location information separately.
-
-## Tech stack
-
-- Next.js
-- React
-- TypeScript
-- Next.js Middleware / Edge runtime concepts
+- Next.js 16.3.5
+- React 19.3.0
+- TypeScript 5.9.2
+- Node.js 22
 - Tailwind CSS
-- `@vercel/examples-ui`
+- `@vercel/examples-ui` 2.0.4
+- Vercel request headers / Proxy rewrite
 
-## Local development
+Runtime dependencies are pinned to stable releases and committed in `package-lock.json`.
+
+## Development
 
 ```bash
 git clone https://github.com/shikakker/ip.git
 cd ip
-npm install
+npm ci
 npm run dev
 ```
 
-Build / start:
+Quality gates:
 
 ```bash
+npm run test
+npm run typecheck
+npm run lint
 npm run build
-npm start
+npm audit --omit=dev --audit-level=high
 ```
 
-Local development may not reproduce production IP geolocation automatically because edge-provider geolocation metadata is normally injected by the hosting platform.
+Or run the local aggregate code check:
+
+```bash
+npm run check
+```
+
+GitHub Actions repeats install, regression tests, production dependency audit, typecheck, zero-warning lint, and production build on Node 22.
+
+## Local geolocation behavior
+
+Vercel injects `x-vercel-ip-country` in its hosted request environment. Local development normally does not have that header, so the application intentionally renders the `unknown`/location-unavailable path unless you exercise the request boundary in an equivalent environment.
+
+`Accept-Language` is treated as request metadata rather than a verified user preference. Both locale and country path segments are normalized before they are used for the rewrite.
+
+## Privacy boundary
+
+The application uses only coarse provider-supplied country metadata for localization. It does not claim street-level or exact location. If this example is extended with analytics or durable user data, collection and retention of location-derived metadata should be documented explicitly.
 
 ## Upstream provenance
 
-`package.json` declares:
+`package.json` retains `https://github.com/vercel/examples.git` as the upstream repository reference. Preserve the upstream MIT license and required notices when redistributing derived code.
 
-```text
-https://github.com/vercel/examples.git
-```
+## Deployment
 
-as the repository origin.
-
-Preserve the upstream MIT license and required notices when redistributing derived code.
-
-## Current status
-
-**Historical Vercel Edge geolocation / localization example.** The repository is useful as an experiment with middleware rewrites, request metadata, i18n dictionaries, and edge-personalized rendering; it should not be presented as an original geolocation platform.
+The repository is linked to a Vercel project, but production promotion/domain changes are intentionally separate from code hardening. Verify an exact-head preview before promoting changes.
 
 ## License
 
-The package declares MIT. Verify the corresponding upstream Vercel example license / notices for the exact source version.
+MIT, subject to the corresponding upstream Vercel example notices.
