@@ -31,6 +31,12 @@ test('document metadata is rendered through next/head instead of unsupported Lay
   assert.doesNotMatch(app, /<Layout[\s\S]*description=/);
 });
 
+test('layout identity is static and is not manufactured during app render', () => {
+  assert.match(app, /import \{ Layout \} from ['"]@vercel\/examples-ui['"]/);
+  assert.doesNotMatch(app, /getLayout/);
+  assert.doesNotMatch(countryPage, /\.Layout\s*=\s*Layout/);
+});
+
 test('production runtime dependencies are pinned and avoid prerelease tags', () => {
   for (const [name, version] of Object.entries(packageJson.dependencies)) {
     assert.notEqual(version, 'latest', `${name} must not float on latest`);
