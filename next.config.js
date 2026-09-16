@@ -1,3 +1,6 @@
-const withTM = require('@vercel/examples-ui/transpile')()
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  transpilePackages: ['@vercel/examples-ui'],
+}
 
-module.exports = withTM()
+module.exports = nextConfig

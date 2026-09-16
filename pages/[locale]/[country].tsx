@@ -1,13 +1,13 @@
 import type { GetStaticPaths, GetStaticProps } from 'next'
 import Image from 'next/image'
 import type { ParsedUrlQuery } from 'querystring'
-import { Layout } from '@vercel/examples-ui'
 import { Dictionary } from '../../lib/types'
 import map from '../../public/map.svg'
 import api from '../../lib/api'
 
 interface Params extends ParsedUrlQuery {
   country: string
+  locale: string
 }
 
 interface Props {
@@ -17,7 +17,6 @@ interface Props {
 }
 
 export const getStaticPaths: GetStaticPaths = async () => {
-  // We don't want to specify all possible countries as we get those from the headers
   return {
     paths: [],
     fallback: 'blocking',
@@ -25,9 +24,10 @@ export const getStaticPaths: GetStaticPaths = async () => {
 }
 
 export const getStaticProps: GetStaticProps<unknown, Params> = async ({
-  params: { country, locale },
+  params,
 }) => {
-  // Get dictionary
+  const country = params?.country || 'unknown'
+  const locale = params?.locale || 'en-us'
   const dictionary = await api.dictionaries.fetch(locale)
 
   return {
@@ -41,6 +41,8 @@ export const getStaticProps: GetStaticProps<unknown, Params> = async ({
 }
 
 export default function CountryPage({ country, locale, dictionary }: Props) {
+  const hasCountry = country !== 'unknown'
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen py-2 bg-gray-50">
       <div className="fixed inset-0 overflow-hidden opacity-75 bg-[#f8fafb]">
@@ -56,7 +58,9 @@ export default function CountryPage({ country, locale, dictionary }: Props) {
         <header className="mb-12 flex flex-col items-center justify-center">
           <h1 className="text-3xl sm:text-5xl font-bold">{dictionary.title}</h1>
           <p className="mt-4 sm:text-xl text-lg text-gray-700">
-            {dictionary.subtitle}
+            {hasCountry
+              ? dictionary.subtitle
+              : 'Your deployment did not provide a country code for this request.'}
           </p>
           <a
             className="flex items-center mt-4 text-md sm:text-lg text-blue-500 hover:underline"
@@ -82,23 +86,28 @@ export default function CountryPage({ country, locale, dictionary }: Props) {
             </svg>
           </a>
         </header>
-        <div className="h-[96px] w-[128px] -mb-28">
-          <Image
-            alt="Country flag"
-            width={128}
-            height={96}
-            src={`/flags/${country.toLowerCase()}.svg`}
-            layout="fixed"
-          />
-        </div>
+        {hasCountry ? (
+          <div className="h-[96px] w-[128px] -mb-28">
+            <Image
+              alt="Country flag"
+              width={128}
+              height={96}
+              src={`/flags/${country.toLowerCase()}.svg`}
+              layout="fixed"
+            />
+          </div>
+        ) : null}
         <section className="border border-gray-300 bg-white rounded-lg shadow-lg mt-16 w-full max-w-[480px] hover:shadow-2xl transition pt-12">
           <div className="p-4 flex flex-col justify-center items-center border-b text-lg italic">
-            {dictionary.greet}
+            {hasCountry ? dictionary.greet : 'Location unavailable'}
           </div>
           <div className="p-4">
             <pre className="bg-black text-white font-mono text-left py-2 px-4 rounded-lg text-sm leading-6">
               <p>
                 <strong>{'locale: '}</strong> {locale}
+              </p>
+              <p>
+                <strong>{'country: '}</strong> {hasCountry ? country : 'unavailable'}
               </p>
             </pre>
           </div>
@@ -107,5 +116,3 @@ export default function CountryPage({ country, locale, dictionary }: Props) {
     </div>
   )
 }
-
-CountryPage.Layout = Layout
