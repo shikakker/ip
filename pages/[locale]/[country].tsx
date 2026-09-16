@@ -1,7 +1,6 @@
 import type { GetStaticPaths, GetStaticProps } from 'next'
 import Image from 'next/image'
 import type { ParsedUrlQuery } from 'querystring'
-import { Layout } from '@vercel/examples-ui'
 import { Dictionary } from '../../lib/types'
 import map from '../../public/map.svg'
 import api from '../../lib/api'
@@ -117,5 +116,3 @@ export default function CountryPage({ country, locale, dictionary }: Props) {
     </div>
   )
 }
-
-CountryPage.Layout = Layout
